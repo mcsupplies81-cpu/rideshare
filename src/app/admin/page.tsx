@@ -15,7 +15,6 @@ export default async function AdminDashboardPage() {
     supabase.from('rides').select('id,pickup_address,dropoff_address,final_fare,estimated_fare,status,created_at').order('created_at', { ascending: false }).limit(10),
     supabase.from('drivers').select('*', { count: 'exact', head: true }).eq('approval_status', 'pending'),
     supabase.from('payments').select('amount').eq('status', 'captured').gte('created_at', startOfToday.toISOString()),
-  ,
     supabase.from('regions').select('id').eq('is_active', true).limit(1),
   ])
 

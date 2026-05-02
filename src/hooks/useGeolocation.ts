@@ -2,29 +2,37 @@
 
 import { useEffect, useState } from 'react'
 
-export function useGeolocation() {
-  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null)
+const SAN_DIEGO_DEFAULT = { lat: 32.7157, lng: -117.1611 }
+
+export function useGeolocation(): { lat: number | null; lng: number | null; loading: boolean; error: string | null } {
+  const [lat, setLat] = useState<number | null>(null)
+  const [lng, setLng] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!navigator.geolocation) {
-      setError('Geolocation is not supported')
+      setError('Geolocation is not supported by this browser.')
+      setLat(SAN_DIEGO_DEFAULT.lat)
+      setLng(SAN_DIEGO_DEFAULT.lng)
       setLoading(false)
       return
     }
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setCoords({ lat: position.coords.latitude, lng: position.coords.longitude })
+        setLat(position.coords.latitude)
+        setLng(position.coords.longitude)
         setLoading(false)
       },
-      (err) => {
-        setError(err.message)
+      (geoError) => {
+        setError(geoError.message)
+        setLat(SAN_DIEGO_DEFAULT.lat)
+        setLng(SAN_DIEGO_DEFAULT.lng)
         setLoading(false)
       }
     )
   }, [])
 
-  return { coords, loading, error }
+  return { lat, lng, loading, error }
 }

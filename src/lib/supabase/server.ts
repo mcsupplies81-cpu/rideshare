@@ -49,3 +49,10 @@ export async function createServiceClient() {
     }
   )
 }
+
+
+export async function requireAuth(supabase: any) {
+  const { data: { user }, error } = await supabase.auth.getUser()
+  if (error || !user) throw new Error('Unauthorized')
+  return user
+}

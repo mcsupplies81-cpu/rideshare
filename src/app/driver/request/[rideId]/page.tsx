@@ -1,0 +1,5 @@
+'use client'
+import { useParams, useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { RideRequestCard } from '@/components/driver/RideRequestCard'
+export default function RideRequestPage(){const {rideId}=useParams<{rideId:string}>(); const router=useRouter(); const [ride,setRide]=useState<any>(null); const [time,setTime]=useState(30); useEffect(()=>{void fetch(`/api/rides/${rideId}/status`).then(r=>r.json()).then(setRide)},[rideId]); useEffect(()=>{if(!ride) return; const i=setInterval(()=>setTime(t=>t-1),1000); return ()=>clearInterval(i)},[ride]); useEffect(()=>{if(time===0){void fetch(`/api/rides/${rideId}/decline`,{method:'POST'}).then(()=>router.push('/driver'))}},[time,rideId,router]); if(!ride) return <p>Loading...</p>; return <RideRequestCard ride={ride} timeRemaining={time} onAccept={async()=>{await fetch(`/api/rides/${rideId}/accept`,{method:'POST'}); router.push(`/driver/trip/${rideId}`)}} onDecline={async()=>{await fetch(`/api/rides/${rideId}/decline`,{method:'POST'}); router.push('/driver')}}/> }

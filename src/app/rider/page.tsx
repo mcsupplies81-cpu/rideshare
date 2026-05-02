@@ -2,36 +2,58 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import AuthGuard from '@/components/shared/AuthGuard'
 import { AddressAutocomplete } from '@/components/maps/AddressAutocomplete'
 import { RiderMap } from '@/components/maps/RiderMap'
 import { useGeolocation } from '@/hooks/useGeolocation'
 
 export default function RiderPage() {
   const router = useRouter()
-  const { coords } = useGeolocation()
-  const [pickup, setPickup] = useState<{ address: string; lat: number; lng: number } | null>(null)
-  const [dropoff, setDropoff] = useState<{ address: string; lat: number; lng: number } | null>(null)
-  const [pickupText, setPickupText] = useState('Current Location')
-  const [dropoffText, setDropoffText] = useState('')
+  const { lat, lng } = useGeolocation()
+  const [pickupAddress, setPickupAddress] = useState('')
+  const [pickupLat, setPickupLat] = useState<number | null>(null)
+  const [pickupLng, setPickupLng] = useState<number | null>(null)
+  const [dropoffAddress, setDropoffAddress] = useState('')
+  const [dropoffLat, setDropoffLat] = useState<number | null>(null)
+  const [dropoffLng, setDropoffLng] = useState<number | null>(null)
 
   useEffect(() => {
-    if (!coords) return
-    setPickup((current) => current ?? { address: 'Current Location', lat: coords.lat, lng: coords.lng })
-  }, [coords])
+    if (lat === null || lng === null || pickupLat !== null || pickupLng !== null) return
+    setPickupLat(lat)
+    setPickupLng(lng)
+    setPickupAddress('Current location')
+  }, [lat, lng, pickupLat, pickupLng])
 
-  const canQuote = Boolean(pickup && dropoff)
-  const query = useMemo(() => {
-    if (!pickup || !dropoff) return ''
-    const params = new URLSearchParams({ pickup_lat: String(pickup.lat), pickup_lng: String(pickup.lng), pickup_address: pickup.address, dropoff_lat: String(dropoff.lat), dropoff_lng: String(dropoff.lng), dropoff_address: dropoff.address })
-    return params.toString()
-  }, [pickup, dropoff])
+  const canQuote = pickupLat !== null && pickupLng !== null && dropoffLat !== null && dropoffLng !== null
 
-  return <main className='mx-auto max-w-md space-y-4 p-4'>
-    <RiderMap pickup={pickup ?? undefined} dropoff={dropoff ?? undefined} />
-    <div className='space-y-3'>
-      <AddressAutocomplete placeholder='Pickup' value={pickupText} onChange={(place) => { setPickup(place); setPickupText(place.address) }} />
-      <AddressAutocomplete placeholder='Dropoff' value={dropoffText} onChange={(place) => { setDropoff(place); setDropoffText(place.address) }} />
-    </div>
-    {canQuote ? <button type='button' onClick={() => router.push(`/rider/quote?${query}`)} className='w-full rounded-lg bg-[#7B5EA7] p-3 font-semibold text-white'>Get Quote →</button> : null}
-  </main>
+  const quoteQuery = useMemo(() => {
+    if (!canQuote) return ''
+    return new URLSearchParams({
+      pickup: pickupAddress,
+      pickupLat: String(pickupLat),
+      pickupLng: String(pickupLng),
+      dropoff: dropoffAddress,
+      dropoffLat: String(dropoffLat),
+      dropoffLng: String(dropoffLng),
+    }).toString()
+  }, [canQuote, pickupAddress, pickupLat, pickupLng, dropoffAddress, dropoffLat, dropoffLng])
+
+  return <AuthGuard requiredRole='rider'>
+    <main className='min-h-screen bg-[#0F0F1A] p-4'>
+      <div className='mx-auto max-w-md space-y-4'>
+        <RiderMap pickupLat={pickupLat ?? undefined} pickupLng={pickupLng ?? undefined} dropoffLat={dropoffLat ?? undefined} dropoffLng={dropoffLng ?? undefined} />
+        <AddressAutocomplete value={pickupAddress} placeholder='Pickup address' onChange={(v, la, ln) => {
+          setPickupAddress(v)
+          setPickupLat(la)
+          setPickupLng(ln)
+        }} />
+        <AddressAutocomplete value={dropoffAddress} placeholder='Dropoff address' onChange={(v, la, ln) => {
+          setDropoffAddress(v)
+          setDropoffLat(la)
+          setDropoffLng(ln)
+        }} />
+        <button disabled={!canQuote} onClick={() => router.push(`/rider/quote?${quoteQuery}`)} className='w-full rounded-xl bg-[#7B5EA7] py-4 font-semibold text-white disabled:opacity-50'>Get Quote</button>
+      </div>
+    </main>
+  </AuthGuard>
 }

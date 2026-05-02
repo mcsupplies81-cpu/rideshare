@@ -1,0 +1,38 @@
+import { NextResponse } from 'next/server'
+import Stripe from 'stripe'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+
+export async function POST() {
+  const supabase = await createClient()
+  const serviceSupabase = await createServiceClient()
+  const { data: auth } = await supabase.auth.getUser()
+  const userId = auth.user?.id
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { data: user } = await serviceSupabase.from('users').select('email,full_name').eq('id', userId).single()
+  const { data: riderProfile } = await serviceSupabase.from('riders').select('stripe_customer_id').eq('id', userId).maybeSingle()
+  let stripeCustomerId = riderProfile?.stripe_customer_id
+
+  if (!stripeCustomerId) {
+    const customer = await stripe.customers.create({
+      email: user?.email ?? undefined,
+      name: user?.full_name ?? undefined,
+      metadata: { driver_id: userId },
+    })
+    stripeCustomerId = customer.id
+    await serviceSupabase.from('riders').upsert({ id: userId, stripe_customer_id: stripeCustomerId })
+  }
+
+  const session = await stripe.checkout.sessions.create({
+    mode: 'subscription',
+    customer: stripeCustomerId,
+    line_items: [{ price: process.env.STRIPE_PRO_PRICE_ID, quantity: 1 }],
+    success_url: `${process.env.NEXT_PUBLIC_APP_URL}/driver/subscription?success=true`,
+    cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/driver/subscription`,
+    metadata: { driver_id: userId },
+  })
+
+  return NextResponse.json({ checkout_url: session.url })
+}

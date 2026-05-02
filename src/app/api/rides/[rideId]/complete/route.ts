@@ -1,8 +1,7 @@
+import { stripe } from '@/lib/stripe/client'
 import { NextResponse } from 'next/server'
-import Stripe from 'stripe'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 export async function POST(_: Request, { params }: { params: Promise<{ rideId: string }> }) {
   const { rideId } = await params

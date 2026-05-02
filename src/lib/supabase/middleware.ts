@@ -44,7 +44,7 @@ export async function updateSession(request: NextRequest) {
 
   if (user) {
     // Fetch role from public.users
-    const { data: profile } = await supabase
+    const { data: profile } : { data: any } = await supabase
       .from('users')
       .select('role')
       .eq('id', user.id)

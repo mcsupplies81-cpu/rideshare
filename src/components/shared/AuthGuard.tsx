@@ -23,7 +23,7 @@ export default function AuthGuard({ children, requiredRole }: AuthGuardProps) {
         return
       }
       if (requiredRole) {
-        const { data: profile } = await supabase
+        const { data: profile } : { data: any } = await supabase
           .from('users')
           .select('role')
           .eq('id', user.id)

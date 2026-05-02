@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Rideo — Better Rides. More Earnings.",
+  title: "Moove — Better Rides. More Earnings.",
   description:
-    "Rideo connects riders with trusted drivers in San Diego and gives drivers more of what they earn.",
+    "Moove connects riders with trusted drivers in San Diego and gives drivers more of what they earn.",
 };
 
 export default function RootLayout({

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { stripe } from '@/lib/stripe/client'
+import { sendEmail } from '@/lib/email/send'
+import { rideConfirmed } from '@/lib/email/templates'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -101,6 +103,12 @@ export async function POST(request: Request) {
 
   await serviceSupabase.from('payments').insert({ ride_id: ride.id, rider_id: user.id, stripe_payment_intent_id: paymentIntent.id, amount: finalFare, status: 'authorized' })
   await serviceSupabase.from('ride_events').insert({ ride_id: ride.id, event_type: 'payment_authorized', metadata: { payment_intent_id: paymentIntent.id } })
+
+  const { data: userRecord } = await serviceSupabase.from('users').select('email,full_name').eq('id', user.id).single()
+  if (userRecord?.email) {
+    const tpl = rideConfirmed({ riderName: userRecord.full_name ?? 'there', pickup: pickup_address, dropoff: dropoff_address, fare: `$${finalFare.toFixed(2)}`, vehicleType: vehicle_type })
+    void sendEmail({ to: userRecord.email, ...tpl })
+  }
 
   return NextResponse.json({ ride_id: ride.id, client_secret: paymentIntent.client_secret })
 }

@@ -68,7 +68,7 @@ function LoginContent() {
           <div className="w-10 h-10 rounded-full bg-[#7B5EA7] flex items-center justify-center font-bold text-lg">
             R
           </div>
-          <span className="text-2xl font-bold">Rideo</span>
+          <span className="text-2xl font-bold">Moove</span>
         </div>
 
         <h1 className="text-2xl font-bold mb-2 text-center">

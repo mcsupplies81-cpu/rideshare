@@ -1,6 +1,8 @@
 import { stripe } from '@/lib/stripe/client'
 import { NextResponse } from 'next/server'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { sendEmail } from '@/lib/email/send'
+import { rideCompleted, payoutSent } from '@/lib/email/templates'
 
 
 export async function POST(_: Request, { params }: { params: Promise<{ rideId: string }> }) {
@@ -61,6 +63,20 @@ export async function POST(_: Request, { params }: { params: Promise<{ rideId: s
     },
     body: JSON.stringify({ ride_id: rideId }),
   }).catch(() => undefined)
+
+  const fullRide = await serviceSupabase.from('rides').select('rider_id,driver_id,pickup_address,dropoff_address').eq('id', rideId).single()
+  const [{ data: riderUser }, { data: driverUser }] = await Promise.all([
+    serviceSupabase.from('users').select('email,full_name').eq('id', fullRide.data?.rider_id).single(),
+    serviceSupabase.from('users').select('email,full_name').eq('id', userId).single(),
+  ])
+  if (riderUser?.email) {
+    const tpl = rideCompleted({ riderName: riderUser.full_name ?? 'there', pickup: fullRide.data?.pickup_address ?? '', dropoff: fullRide.data?.dropoff_address ?? '', fare: `$${finalFare.toFixed(2)}`, distance: `${actualMiles.toFixed(1)} mi` })
+    void sendEmail({ to: riderUser.email, ...tpl })
+  }
+  if (driverUser?.email) {
+    const tpl = payoutSent({ driverName: driverUser.full_name ?? 'there', amount: `$${(finalFare * 0.85).toFixed(2)}`, periodRides: 1 })
+    void sendEmail({ to: driverUser.email, ...tpl })
+  }
 
   return NextResponse.json({ success: true, final_fare: finalFare, ride_id: rideId })
 }

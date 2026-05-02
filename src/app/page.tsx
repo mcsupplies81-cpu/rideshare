@@ -8,7 +8,7 @@ export default function Home() {
         <div className="w-10 h-10 rounded-full bg-[#7B5EA7] flex items-center justify-center font-bold text-lg">
           R
         </div>
-        <span className="text-2xl font-bold">Rideo</span>
+        <span className="text-2xl font-bold">Moove</span>
       </div>
 
       {/* Hero */}
@@ -22,7 +22,7 @@ export default function Home() {
         </h1>
 
         <p className="text-gray-400 max-w-sm text-base leading-relaxed">
-          Rideo connects riders with trusted drivers in San Diego
+          Moove connects riders with trusted drivers in San Diego
           and gives drivers more of what they earn.
         </p>
 

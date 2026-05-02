@@ -25,7 +25,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return <div className="md:grid md:grid-cols-[240px_1fr] min-h-screen bg-slate-950 text-white">
     <aside className="hidden md:block sticky top-0 h-screen bg-[#1A1A2E] p-4">
-      <h2 className="mb-6 text-xl font-bold">Rideo Admin</h2>
+      <h2 className="mb-6 text-xl font-bold">Moove Admin</h2>
       <nav className="space-y-4">
         <div className='space-y-2'>{topItems.map(([label, href]) => <Link key={href} href={href} className="block rounded-l border-l-4 border-purple-500 px-3 py-2 hover:bg-purple-900/30">{label}</Link>)}</div>
         <div>

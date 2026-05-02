@@ -68,14 +68,14 @@ function SignupContent() {
       <div className="w-full max-w-sm">
         <div className="flex items-center gap-3 mb-10 justify-center">
           <div className="w-10 h-10 rounded-full bg-[#7B5EA7] flex items-center justify-center font-bold text-lg">R</div>
-          <span className="text-2xl font-bold">Rideo</span>
+          <span className="text-2xl font-bold">Moove</span>
         </div>
 
         <h1 className="text-2xl font-bold mb-2 text-center">
           {step === 'info' ? 'Create your account' : 'Verify your number'}
         </h1>
         <p className="text-gray-400 text-sm text-center mb-6">
-          {step === 'info' ? 'Join Rideo in San Diego' : `We sent a code to ${phone}`}
+          {step === 'info' ? 'Join Moove in San Diego' : `We sent a code to ${phone}`}
         </p>
 
         {error && (

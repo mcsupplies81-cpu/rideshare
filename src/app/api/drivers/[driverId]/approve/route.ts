@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { requireAdminApi } from '@/lib/admin'
+import { sendEmail } from '@/lib/email/send'
+import { driverApproved } from '@/lib/email/templates'
 
 export async function POST(_: Request, { params }: { params: Promise<{ driverId: string }> }) {
   const auth = await requireAdminApi()
@@ -23,6 +25,11 @@ export async function POST(_: Request, { params }: { params: Promise<{ driverId:
     is_active: true,
     ends_at: (count ?? 0) <= 100 ? new Date(Date.now() + 30 * 86400000).toISOString() : null,
   })
+
+  const { data: user } = await supabase.from('users').select('email,full_name').eq('id', driverId).single()
+  if (user?.email) {
+    void sendEmail({ to: user.email, ...driverApproved({ driverName: user.full_name ?? 'there' }) })
+  }
 
   return NextResponse.json({ success: true })
 }

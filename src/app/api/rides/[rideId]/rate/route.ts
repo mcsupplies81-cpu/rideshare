@@ -1,24 +1,24 @@
-import { NextResponse } from 'next/server'
-import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { z } from 'zod'
+import { createServiceClient } from '@/lib/supabase/server'
+import { ok, err } from '@/lib/api/response'
+import { withAuth } from '@/lib/auth/guards'
+import { RateSchema } from '@/lib/validation/rides'
 
 type RatedBy = 'rider' | 'driver'
 
 export async function POST(request: Request, { params }: { params: Promise<{ rideId: string }> }) {
   const { rideId } = await params
-  const { rating, rated_by } = (await request.json()) as { rating: number; rated_by: RatedBy }
-  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
-    return NextResponse.json({ error: 'Rating must be an integer between 1 and 5' }, { status: 400 })
-  }
+  const body = await request.json().catch(() => null)
+  const parsed = RateSchema.extend({ rated_by: z.enum(['rider', 'driver']) }).safeParse(body)
+  if (!parsed.success) return err(parsed.error.issues[0].message, 400)
+  const { rating, rated_by } = parsed.data as { rating: number; rated_by: RatedBy }
 
-  const supabase = await createClient()
-  const serviceSupabase = await createServiceClient() as any
-  const { data: auth } = await supabase.auth.getUser()
-  const userId = auth.user?.id
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  return withAuth(async (userId) => {
+    const serviceSupabase = await createServiceClient() as any
 
   const { data: ride } = await serviceSupabase.from('rides').select('id,rider_id,driver_id').eq('id', rideId).single()
-  if (!ride) return NextResponse.json({ error: 'Ride not found' }, { status: 404 })
-  if (ride.rider_id !== userId && ride.driver_id !== userId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (!ride) return err('Ride not found', 404)
+  if (ride.rider_id !== userId && ride.driver_id !== userId) return err('Forbidden', 403)
 
   if (rated_by === 'rider') {
     await serviceSupabase.from('rides').update({ rating_by_rider: rating }).eq('id', rideId)
@@ -49,5 +49,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ rid
     metadata: { rating, rated_by },
   })
 
-  return NextResponse.json({ success: true })
+  return ok({ success: true })
+  })
 }

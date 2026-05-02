@@ -1,7 +1,8 @@
-import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { getDirections } from '@/lib/maps/geocoding'
 import { calculateFare } from '@/lib/fare/calculator'
+import { ok, err } from '@/lib/api/response'
+import { QuoteSchema } from '@/lib/validation/rides'
 import type { Database } from '@/types/database'
 
 type PromoCode = {
@@ -34,15 +35,17 @@ function applyPromo(fare: number, minimumFare: number, promo: PromoCode | null) 
 }
 
 export async function POST(request: Request) {
-  const body = await request.json()
-  const pickup_lat = Number(body.pickup_lat)
-  const pickup_lng = Number(body.pickup_lng)
-  const dropoff_lat = Number(body.dropoff_lat)
-  const dropoff_lng = Number(body.dropoff_lng)
-  const promoCode = typeof body.promoCode === 'string' ? body.promoCode.trim() : ''
+  const body = await request.json().catch(() => null)
+  const parsed = QuoteSchema.safeParse(body)
+  if (!parsed.success) return err(parsed.error.issues[0].message, 400)
+  const pickup_lat = Number(parsed.data.pickup_lat)
+  const pickup_lng = Number(parsed.data.pickup_lng)
+  const dropoff_lat = Number(parsed.data.dropoff_lat)
+  const dropoff_lng = Number(parsed.data.dropoff_lng)
+  const promoCode = typeof parsed.data.promoCode === 'string' ? parsed.data.promoCode.trim() : ''
 
   if ([pickup_lat, pickup_lng, dropoff_lat, dropoff_lng].some((n) => Number.isNaN(n))) {
-    return NextResponse.json({ error: 'Invalid coordinates' }, { status: 400 })
+    return err('Invalid coordinates', 400)
   }
 
   const supabase = await createServiceClient() as any
@@ -59,7 +62,7 @@ export async function POST(request: Request) {
       .maybeSingle()
 
     if (!data) {
-      return NextResponse.json({ error: 'Promo code invalid or expired' }, { status: 400 })
+      return err('Promo code invalid or expired', 400)
     }
     promo = { ...data, discount_value: Number(data.discount_value) }
   }
@@ -94,7 +97,7 @@ export async function POST(request: Request) {
     return { vehicle_type, display_name: name, fare, multiplier: m, ...promoResult, breakdown }
   }
 
-  return NextResponse.json({
+  return ok({
     distance_miles,
     duration_minutes,
     fares: {

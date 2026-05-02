@@ -24,7 +24,10 @@ export default async function DriversPage({ searchParams }: { searchParams: Prom
   const hasNext = page * 20 < total
 
   return <div className="space-y-4 text-white">
-    <h1 className="text-2xl font-bold">Drivers</h1>
+    <div className="flex items-center justify-between">
+      <h1 className="text-2xl font-bold">Drivers</h1>
+      <Link href="/api/admin/drivers?format=csv" className="rounded-md bg-purple-600 px-3 py-2 text-sm font-medium hover:bg-purple-500">Export CSV</Link>
+    </div>
     <div className="flex gap-2">{statuses.map((s) => <Link key={s} href={`/admin/drivers?status=${s}&page=1`} className={`rounded-full px-4 py-2 text-sm ${status === s ? 'bg-purple-600' : 'bg-slate-800 text-slate-300'}`}>{s[0].toUpperCase() + s.slice(1)}</Link>)}</div>
     {rows.length === 0 ? <div className="rounded-xl border border-slate-800 bg-[#1A1A2E] p-8 text-center text-slate-300">No {status === 'all' ? '' : status} drivers found.</div> : (
       <div className="overflow-x-auto rounded-xl bg-[#1A1A2E] p-2">

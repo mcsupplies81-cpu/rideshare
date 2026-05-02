@@ -8,12 +8,9 @@ export default async function RiderLayout({ children }: { children: React.ReactN
 
   if (!user) redirect('/login')
 
-  const { data: profile } : { data: any } = await supabase.from('users').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'rider') redirect('/login')
-
   return (
     <div className='min-h-screen bg-[#0F0F1A] pb-20 text-white'>
-      {children}
+      <div>{children}</div>
       <RiderNav />
     </div>
   )

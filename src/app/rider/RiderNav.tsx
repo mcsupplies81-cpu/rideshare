@@ -15,7 +15,7 @@ export function RiderNav() {
     <div className='mx-auto grid max-w-md grid-cols-3'>
       {tabs.map((tab) => {
         const active = pathname === tab.href
-        return <Link key={tab.href} href={tab.href} className={`p-4 text-center text-sm ${active ? 'border-t-2 border-[#7B5EA7] text-white' : 'text-gray-400'}`}>{tab.label}</Link>
+        return <Link key={tab.href} href={tab.href} className={`p-4 text-center text-sm ${active ? 'border-t-2 border-[#7B5EA7] text-[#7B5EA7]' : 'text-gray-400'}`}>{tab.label}</Link>
       })}
     </div>
   </nav>

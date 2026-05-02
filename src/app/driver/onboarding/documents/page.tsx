@@ -10,7 +10,7 @@ export default function DocumentsStep() {
   const r = useRouter()
   const [uploaded, setUploaded] = useState<Record<string, string>>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [uploadState, setUploadState] = useState<Record<string, 'uploading' | 'uploaded' | 'idle'>>({})
+  const [uploadState, setUploadState] = useState<Record<string, 'pending' | 'uploading' | 'uploaded' | 'idle'>>({})
 
   function validateFile(documentType: string, file: File) {
     if (!ALLOWED_TYPES.includes(file.type)) {

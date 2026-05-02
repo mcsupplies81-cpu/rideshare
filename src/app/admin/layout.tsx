@@ -3,11 +3,14 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
 const items = [
-  ['Dashboard', '/admin'],
-  ['Rides', '/admin/rides'],
+  ['Overview', '/admin'],
   ['Drivers', '/admin/drivers'],
+  ['Rides', '/admin/rides'],
   ['Revenue', '/admin/revenue'],
-  ['Settings', '/admin/settings/fares'],
+  ['Settings: Fares', '/admin/settings/fares'],
+  ['Settings: Promo Codes', '/admin/settings/promo-codes'],
+  ['Settings: Surge', '/admin/settings/surge'],
+  ['Settings: Regions', '/admin/settings/regions'],
 ]
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

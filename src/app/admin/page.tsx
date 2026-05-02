@@ -2,11 +2,12 @@ import Link from 'next/link'
 import { createServiceClient } from '@/lib/supabase/server'
 import { MetricCard } from '@/components/admin/MetricCard'
 import { RideActivityFeed } from '@/components/admin/RideActivityFeed'
+import { QuickActions } from './QuickActions'
 
 export default async function AdminDashboardPage() {
   const supabase = await createServiceClient() as any
   const startOfToday = new Date(); startOfToday.setUTCHours(0,0,0,0)
-  const [{ count: totalRides }, { data: payments }, { count: driversOnline }, { count: newUsers }, { data: initialRides }, { count: pendingApprovals }, { data: todayPayments }] = await Promise.all([
+  const [{ count: totalRides }, { data: payments }, { count: driversOnline }, { count: newUsers }, { data: initialRides }, { count: pendingApprovals }, { data: todayPayments }, { data: regions }] = await Promise.all([
     supabase.from('rides').select('*', { count: 'exact', head: true }).eq('status', 'completed'),
     supabase.from('payments').select('amount').eq('status', 'captured'),
     supabase.from('drivers').select('*', { count: 'exact', head: true }).eq('is_online', true),
@@ -14,6 +15,8 @@ export default async function AdminDashboardPage() {
     supabase.from('rides').select('id,pickup_address,dropoff_address,final_fare,estimated_fare,status,created_at').order('created_at', { ascending: false }).limit(10),
     supabase.from('drivers').select('*', { count: 'exact', head: true }).eq('approval_status', 'pending'),
     supabase.from('payments').select('amount').eq('status', 'captured').gte('created_at', startOfToday.toISOString()),
+  ,
+    supabase.from('regions').select('id').eq('is_active', true).limit(1),
   ])
 
   return <div className="space-y-6">
@@ -27,6 +30,7 @@ export default async function AdminDashboardPage() {
     </div>
     {pendingApprovals > 0 && <Link href="/admin/drivers?status=pending" className="text-purple-300">Review Drivers →</Link>}
     <div className="rounded border border-slate-700 p-4">Rides over time available at <Link href="/api/admin/metrics" className="text-purple-300">metrics API</Link></div>
+    <QuickActions defaultRegionId={regions?.[0]?.id} />
     <RideActivityFeed initialRides={initialRides ?? []} />
   </div>
 }

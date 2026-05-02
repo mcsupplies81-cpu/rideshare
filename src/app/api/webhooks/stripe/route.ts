@@ -1,131 +1,106 @@
-import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe/client'
+import { headers } from 'next/headers'
+import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
-import type Stripe from 'stripe'
+
 
 export async function POST(request: Request) {
   const body = await request.text()
-  const sig = request.headers.get('stripe-signature')
-
-  if (!sig) {
-    return NextResponse.json({ error: 'Missing signature' }, { status: 400 })
-  }
+  const signature = (await headers()).get('stripe-signature')
+  if (!signature) return NextResponse.json({ error: 'Missing signature' }, { status: 400 })
 
   let event: Stripe.Event
   try {
-    event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET!)
+    event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET!)
   } catch {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
-  const supabase = createServiceClient()
+  const supabase = await createServiceClient()
 
-  switch (event.type) {
-    case 'payment_intent.amount_capturable_updated': {
-      // PaymentIntent is authorized — ride is ready to dispatch
-      const pi = event.data.object as Stripe.PaymentIntent
-      const riderId = pi.metadata.rider_id
-      if (!riderId) break
-
-      // Find the ride associated with this payment intent
-      const { data: payment } = await supabase
-        .from('payments')
-        .select('ride_id')
-        .eq('stripe_payment_intent_id', pi.id)
-        .single()
-
-      if (payment?.ride_id) {
-        // Ensure status is payment_authorized before dispatching
-        await supabase
-          .from('rides')
-          .update({ status: 'searching' })
-          .eq('id', payment.ride_id)
-          .eq('status', 'payment_authorized')
-
-        await supabase.from('ride_events').insert({
-          ride_id: payment.ride_id,
-          event_type: 'searching_started',
-          metadata: { payment_intent_id: pi.id },
-        })
-      }
-      break
-    }
-
-    case 'payment_intent.succeeded': {
-      const pi = event.data.object as Stripe.PaymentIntent
-      await supabase
-        .from('payments')
-        .update({ status: 'captured' })
-        .eq('stripe_payment_intent_id', pi.id)
-      break
-    }
-
-    case 'payment_intent.payment_failed': {
-      const pi = event.data.object as Stripe.PaymentIntent
-      const { data: payment } = await supabase
-        .from('payments')
-        .select('ride_id')
-        .eq('stripe_payment_intent_id', pi.id)
-        .single()
-
-      if (payment?.ride_id) {
-        await supabase
-          .from('rides')
-          .update({ status: 'payment_failed' })
-          .eq('id', payment.ride_id)
-
-        await supabase.from('payments').update({ status: 'failed' }).eq('stripe_payment_intent_id', pi.id)
-      }
-      break
-    }
-
-    case 'payment_intent.canceled': {
-      const pi = event.data.object as Stripe.PaymentIntent
-      await supabase
-        .from('payments')
-        .update({ status: 'voided' })
-        .eq('stripe_payment_intent_id', pi.id)
-      break
-    }
-
-    // Subscription events (expanded in Sprint 4)
-    case 'customer.subscription.created':
-    case 'customer.subscription.updated': {
-      const sub = event.data.object as Stripe.Subscription
-      const driverId = sub.metadata.driver_id
-      if (!driverId) break
-
-      const isActive = sub.status === 'active' || sub.status === 'trialing'
+  if (event.type === 'customer.subscription.created') {
+    const sub = event.data.object as Stripe.Subscription
+    const customerId = String(sub.customer)
+    const { data: rider } = await supabase.from('riders').select('id').eq('stripe_customer_id', customerId).maybeSingle()
+    const driverId = rider?.id
+    if (driverId) {
       await supabase.from('subscriptions').upsert({
         driver_id: driverId,
         stripe_subscription_id: sub.id,
-        stripe_customer_id: sub.customer as string,
+        stripe_customer_id: customerId,
         status: sub.status,
-        current_period_start: new Date(sub.current_period_start * 1000).toISOString(),
-        current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
-      }, { onConflict: 'stripe_subscription_id' })
-
-      if (isActive) {
-        await supabase
-          .from('driver_plans')
-          .update({ plan_type: 'pro' })
-          .eq('driver_id', driverId)
-      }
-      break
+        plan_type: 'pro',
+        current_period_start: new Date(sub.items.data[0]?.current_period_start * 1000).toISOString(),
+        current_period_end: new Date(sub.items.data[0]?.current_period_end * 1000).toISOString(),
+        cancel_at_period_end: sub.cancel_at_period_end,
+      })
+      await supabase.from('driver_plans').update({ is_active: false }).eq('driver_id', driverId)
+      await supabase.from('driver_plans').insert({
+        driver_id: driverId,
+        plan_type: 'pro',
+        stripe_subscription_id: sub.id,
+        stripe_subscription_status: sub.status,
+        ends_at: new Date(sub.items.data[0]?.current_period_end * 1000).toISOString(),
+      })
     }
+  }
 
-    case 'customer.subscription.deleted': {
-      const sub = event.data.object as Stripe.Subscription
-      const driverId = sub.metadata.driver_id
-      if (!driverId) break
+  if (event.type === 'customer.subscription.updated') {
+    const sub = event.data.object as Stripe.Subscription
+    await supabase
+      .from('subscriptions')
+      .update({
+        status: sub.status,
+        current_period_start: new Date(sub.items.data[0]?.current_period_start * 1000).toISOString(),
+        current_period_end: new Date(sub.items.data[0]?.current_period_end * 1000).toISOString(),
+        cancel_at_period_end: sub.cancel_at_period_end,
+      })
+      .eq('stripe_subscription_id', sub.id)
+  }
 
-      await supabase.from('subscriptions').update({ status: 'canceled' }).eq('stripe_subscription_id', sub.id)
-      await supabase.from('driver_plans').update({ plan_type: 'per_ride' }).eq('driver_id', driverId)
-      break
+  if (event.type === 'customer.subscription.deleted') {
+    const sub = event.data.object as Stripe.Subscription
+    const { data: row } = await supabase
+      .from('subscriptions')
+      .update({ status: 'canceled' })
+      .eq('stripe_subscription_id', sub.id)
+      .select('driver_id')
+      .single()
+    if (row) {
+      await supabase.from('driver_plans').update({ is_active: false }).eq('driver_id', row.driver_id).eq('plan_type', 'pro')
+      await supabase.from('driver_plans').insert({ driver_id: row.driver_id, plan_type: 'per_ride' })
     }
+  }
 
-    default:
-      break
+  if (event.type === 'account.updated') {
+    const account = event.data.object as Stripe.Account
+    if (account.details_submitted && account.charges_enabled) {
+      await supabase
+        .from('drivers')
+        .update({ stripe_connect_onboarded: true })
+        .eq('stripe_connect_account_id', account.id)
+    }
+  }
+
+  if (event.type === 'transfer.created') {
+    const transfer = event.data.object as Stripe.Transfer
+    await supabase.from('payouts').upsert({
+      driver_id: String(transfer.metadata.driver_id ?? ''),
+      ride_id: transfer.metadata.ride_id ?? null,
+      gross_amount: 0,
+      platform_fee: 0,
+      net_amount: transfer.amount / 100,
+      stripe_transfer_id: transfer.id,
+      status: 'processing',
+    })
+  }
+  if (event.type === 'transfer.paid') {
+    const transfer = event.data.object as Stripe.Transfer
+    await supabase.from('payouts').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('stripe_transfer_id', transfer.id)
+  }
+  if (event.type === 'transfer.failed') {
+    const transfer = event.data.object as Stripe.Transfer
+    await supabase.from('payouts').update({ status: 'failed' }).eq('stripe_transfer_id', transfer.id)
   }
 
   return NextResponse.json({ received: true })

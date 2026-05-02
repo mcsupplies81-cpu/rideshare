@@ -49,7 +49,7 @@ export default function SignupPage() {
 
     if (data.user) {
       // Ensure user profile exists (trigger may handle this)
-      await supabase.from('users').upsert({
+      await (supabase.from('users') as any).upsert({
         id: data.user.id,
         email: data.user.email ?? '',
         phone: formatted,

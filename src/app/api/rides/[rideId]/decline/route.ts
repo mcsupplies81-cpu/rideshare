@@ -1,2 +1,16 @@
-import { NextResponse } from 'next/server'; import { createClient } from '@/lib/supabase/server'
-export async function POST(_req:Request,{params}:{params:Promise<{rideId:string}>}){const {rideId}=await params; const supabase=await createClient(); const {data:{user}}=await supabase.auth.getUser(); if(!user) return NextResponse.json({error:'unauthorized'},{status:401}); await supabase.from('ride_events').insert({ride_id:rideId,event_type:'driver_declined',actor_id:user.id}); fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/dispatch-ride`,{method:'POST',headers:{Authorization:`Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({ride_id:rideId})}).catch(()=>{}); return NextResponse.json({success:true})}
+import { NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+
+export async function POST(_req: Request, { params }: { params: Promise<{ rideId: string }> }) {
+  const { rideId } = await params
+  const supabase = await createClient() as any
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+  await supabase.from('ride_events').insert({ ride_id: rideId, event_type: 'driver_declined', actor_id: user.id })
+  fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/dispatch-ride`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ride_id: rideId }),
+  }).catch(() => {})
+  return NextResponse.json({ success: true })
+}

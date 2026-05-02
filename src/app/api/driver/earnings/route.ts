@@ -16,19 +16,19 @@ export async function GET(request: Request) {
   if (period === 'week') startDate.setUTCDate(startDate.getUTCDate() - 7)
   if (period === 'month') startDate.setUTCMonth(startDate.getUTCMonth() - 1)
 
-  const { data: payouts } = await serviceSupabase
+  const { data: payouts } = await (serviceSupabase as any)
     .from('payouts')
     .select('gross_amount,platform_fee,net_amount,status,ride_id,created_at,rides!inner(completed_at,pickup_address,dropoff_address,driver_id)')
     .gte('created_at', startDate.toISOString())
     .eq('rides.driver_id', userId)
     .order('created_at', { ascending: false })
 
-  const rows = payouts ?? []
-  const totalGross = rows.reduce((s, r) => s + r.gross_amount, 0)
-  const totalFees = rows.reduce((s, r) => s + r.platform_fee, 0)
-  const totalNet = rows.reduce((s, r) => s + r.net_amount, 0)
+  const rows = (payouts ?? []) as any[]
+  const totalGross = rows.reduce((s: number, r: any) => s + r.gross_amount, 0)
+  const totalFees = rows.reduce((s: number, r: any) => s + r.platform_fee, 0)
+  const totalNet = rows.reduce((s: number, r: any) => s + r.net_amount, 0)
 
-  const recentRides = rows.slice(0, 10).map((r) => ({
+  const recentRides = rows.slice(0, 10).map((r: any) => ({
     ride_id: r.ride_id,
     completed_at: (r.rides as any).completed_at,
     pickup_address: (r.rides as any).pickup_address,

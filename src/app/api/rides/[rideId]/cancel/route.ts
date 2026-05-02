@@ -4,8 +4,9 @@ import { stripe } from '@/lib/stripe/client'
 
 export async function POST(
   _request: Request,
-  { params }: { params: { rideId: string } }
+  { params }: { params: Promise<{ rideId: string }> }
 ) {
+  const { rideId } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -13,11 +14,11 @@ export async function POST(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const serviceSupabase = createServiceClient()
+  const serviceSupabase = await createServiceClient() as any
   const { data: ride } = await serviceSupabase
     .from('rides')
     .select('id, rider_id, status')
-    .eq('id', params.rideId)
+    .eq('id', rideId)
     .single()
 
   if (!ride) {
@@ -33,7 +34,6 @@ export async function POST(
     return NextResponse.json({ error: 'Ride cannot be cancelled at this stage' }, { status: 409 })
   }
 
-  // Void the PaymentIntent
   const { data: payment } = await serviceSupabase
     .from('payments')
     .select('stripe_payment_intent_id')

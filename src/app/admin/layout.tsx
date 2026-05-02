@@ -14,7 +14,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login?role=admin')
-  const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single()
+  const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single() as { data: { role: string } | null }
   if (profile?.role !== 'admin') redirect('/')
 
   return <div className="md:grid md:grid-cols-[240px_1fr] min-h-screen bg-slate-950 text-white">

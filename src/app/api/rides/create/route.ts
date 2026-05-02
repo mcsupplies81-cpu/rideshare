@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
   }
 
-  const serviceSupabase = createServiceClient()
+  const serviceSupabase = await createServiceClient() as any
 
   // Get or create Stripe customer for this user
   const { data: riderProfile } = await serviceSupabase

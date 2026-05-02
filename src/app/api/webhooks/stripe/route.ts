@@ -1,4 +1,5 @@
 import { stripe } from '@/lib/stripe/client'
+import type Stripe from 'stripe'
 import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
@@ -9,14 +10,14 @@ export async function POST(request: Request) {
   const signature = (await headers()).get('stripe-signature')
   if (!signature) return NextResponse.json({ error: 'Missing signature' }, { status: 400 })
 
-  let event: Stripe.Event
+  let event: Stripe.Event | { type: string; data: { object: any } }
   try {
     event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET!)
   } catch {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
-  const supabase = await createServiceClient()
+  const supabase = await createServiceClient() as any
 
   if (event.type === 'customer.subscription.created') {
     const sub = event.data.object as Stripe.Subscription

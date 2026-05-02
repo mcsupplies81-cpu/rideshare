@@ -11,7 +11,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ rid
   }
 
   const supabase = await createClient()
-  const serviceSupabase = await createServiceClient()
+  const serviceSupabase = await createServiceClient() as any
   const { data: auth } = await supabase.auth.getUser()
   const userId = auth.user?.id
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -27,7 +27,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ rid
       .select('rating_by_rider')
       .eq('driver_id', ride.driver_id!)
       .not('rating_by_rider', 'is', null)
-    const avg = ratings && ratings.length ? ratings.reduce((s, r) => s + (r.rating_by_rider ?? 0), 0) / ratings.length : 0
+    const avg = ratings && ratings.length ? (ratings as any[]).reduce((s: number, r: any) => s + (r.rating_by_rider ?? 0), 0) / ratings.length : 0
     await serviceSupabase.from('drivers').update({ rating: Math.round(avg * 100) / 100 }).eq('id', ride.driver_id!)
   }
 
@@ -38,7 +38,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ rid
       .select('rating_by_driver')
       .eq('rider_id', ride.rider_id)
       .not('rating_by_driver', 'is', null)
-    const avg = ratings && ratings.length ? ratings.reduce((s, r) => s + (r.rating_by_driver ?? 0), 0) / ratings.length : 0
+    const avg = ratings && ratings.length ? (ratings as any[]).reduce((s: number, r: any) => s + (r.rating_by_driver ?? 0), 0) / ratings.length : 0
     await serviceSupabase.from('riders').update({ rating: Math.round(avg * 100) / 100 }).eq('id', ride.rider_id)
   }
 

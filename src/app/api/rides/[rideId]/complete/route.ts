@@ -6,7 +6,7 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 export async function POST(_: Request, { params }: { params: Promise<{ rideId: string }> }) {
   const { rideId } = await params
   const supabase = await createClient()
-  const serviceSupabase = await createServiceClient()
+  const serviceSupabase = await createServiceClient() as any
 
   const { data: auth } = await supabase.auth.getUser()
   const userId = auth.user?.id

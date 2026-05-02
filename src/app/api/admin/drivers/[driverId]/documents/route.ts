@@ -1,2 +1,24 @@
-import { NextResponse } from 'next/server';import { createServiceClient } from '@/lib/supabase/server';import { requireAdminApi } from '@/lib/admin';
-export async function GET(_:Request,{params}:{params:Promise<{driverId:string}>}){const auth=await requireAdminApi();if(auth.error)return auth.error;const {driverId}=await params;const supabase=await createServiceClient();const {data}=await supabase.from('driver_documents').select('*').eq('driver_id',driverId);const documents=await Promise.all((data??[]).map(async d=>{const {data:signed}=await supabase.storage.from('driver-documents').createSignedUrl(d.storage_path,3600);return {...d,signed_url:signed?.signedUrl??null}}));return NextResponse.json({documents});}
+import { NextResponse } from 'next/server'
+import { createServiceClient } from '@/lib/supabase/server'
+import { requireAdminApi } from '@/lib/admin'
+
+export async function GET(_: Request, { params }: { params: Promise<{ driverId: string }> }) {
+  const auth = await requireAdminApi()
+  if (auth.error) return auth.error
+
+  const { driverId } = await params
+  const supabase = await createServiceClient()
+
+  const { data } = await (supabase as any).from('driver_documents').select('*').eq('driver_id', driverId)
+
+  const documents = await Promise.all(
+    ((data ?? []) as any[]).map(async (d: any) => {
+      const { data: signed } = await supabase.storage
+        .from('driver-documents')
+        .createSignedUrl(d.storage_path, 3600)
+      return { ...d, signed_url: signed?.signedUrl ?? null }
+    })
+  )
+
+  return NextResponse.json({ documents })
+}

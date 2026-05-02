@@ -75,8 +75,10 @@ export default function RiderTripPage() {
             <p>{ride?.driver?.full_name ?? 'Your driver'} • ⭐ {driverRating}</p>
             <p className="text-sm text-gray-300">{rideDetail?.vehicle_make} {rideDetail?.vehicle_model} {rideDetail?.vehicle_color}</p>
             <RiderMap
-              pickup={rideDetail?.driver_lat && rideDetail?.driver_lng ? { lat: rideDetail.driver_lat, lng: rideDetail.driver_lng } : undefined}
-              dropoff={rideDetail?.pickup_lat && rideDetail?.pickup_lng ? { lat: rideDetail.pickup_lat, lng: rideDetail.pickup_lng } : undefined}
+              pickupLat={rideDetail?.driver_lat ?? undefined}
+              pickupLng={rideDetail?.driver_lng ?? undefined}
+              dropoffLat={rideDetail?.pickup_lat ?? undefined}
+              dropoffLng={rideDetail?.pickup_lng ?? undefined}
             />
             {rideDetail?.estimated_arrival && <p>Estimated arrival: {rideDetail.estimated_arrival}</p>}
             {canCancel && (
@@ -108,8 +110,10 @@ export default function RiderTripPage() {
           <section className="space-y-4 rounded-xl bg-[#1A1A2E] p-5">
             <h1 className="text-2xl font-bold">You&apos;re on your way!</h1>
             <RiderMap
-              pickup={rideDetail?.pickup_lat && rideDetail?.pickup_lng ? { lat: rideDetail.pickup_lat, lng: rideDetail.pickup_lng } : undefined}
-              dropoff={rideDetail?.dropoff_lat && rideDetail?.dropoff_lng ? { lat: rideDetail.dropoff_lat, lng: rideDetail.dropoff_lng } : undefined}
+              pickupLat={rideDetail?.pickup_lat ?? undefined}
+              pickupLng={rideDetail?.pickup_lng ?? undefined}
+              dropoffLat={rideDetail?.dropoff_lat ?? undefined}
+              dropoffLng={rideDetail?.dropoff_lng ?? undefined}
             />
             <p className="text-sm text-gray-300">Dropoff: {rideDetail?.dropoff_address ?? '—'}</p>
             {rideDetail?.estimated_time_remaining && <p>Estimated time remaining: {rideDetail.estimated_time_remaining}</p>}

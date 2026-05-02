@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import TripMap from '@/components/maps/TripMap'
+import { TripMap } from '@/components/maps/TripMap'
 import { useRideStatus } from '@/hooks/useRideStatus'
 import { useCurrentLocation, useDriverLocation } from '@/hooks/useDriverLocation'
 
@@ -68,7 +68,7 @@ export default function DriverTripPage() {
             <h1 className="text-2xl font-bold">En route to pickup</h1>
             <p>{ride.rider_name ?? 'Rider'}</p>
             <p className="text-gray-300">{ride.pickup_address}</p>
-            <TripMap driverLat={lat} driverLng={lng} pickupLat={ride.pickup_lat ?? null} pickupLng={ride.pickup_lng ?? null} />
+            {lat !== null && lng !== null && ride.pickup_lat != null && ride.pickup_lng != null && <TripMap driverLat={lat} driverLng={lng} pickupLat={ride.pickup_lat} pickupLng={ride.pickup_lng} dropoffLat={ride.dropoff_lat ?? 0} dropoffLng={ride.dropoff_lng ?? 0} />}
             <button disabled={!!loadingAction} onClick={() => void postAction('arrived')} className="w-full rounded-xl bg-[#7B5EA7] py-4 text-lg font-semibold">{loadingAction === 'arrived' ? 'Updating...' : "I've Arrived"}</button>
           </>
         )}
@@ -87,7 +87,7 @@ export default function DriverTripPage() {
             <h1 className="text-2xl font-bold">Trip in progress</h1>
             <p className="text-lg text-gray-200">Dropoff: {ride.dropoff_address}</p>
             <p className="text-2xl font-bold text-green-400">Est. ${Number(ride.estimated_fare ?? 0).toFixed(2)}</p>
-            <TripMap driverLat={lat} driverLng={lng} pickupLat={ride.pickup_lat ?? null} pickupLng={ride.pickup_lng ?? null} dropoffLat={ride.dropoff_lat ?? null} dropoffLng={ride.dropoff_lng ?? null} />
+            {lat !== null && lng !== null && ride.pickup_lat != null && ride.pickup_lng != null && ride.dropoff_lat != null && ride.dropoff_lng != null && <TripMap driverLat={lat} driverLng={lng} pickupLat={ride.pickup_lat} pickupLng={ride.pickup_lng} dropoffLat={ride.dropoff_lat} dropoffLng={ride.dropoff_lng} />}
             <button disabled={!!loadingAction} onClick={() => void postAction('complete')} className="w-full rounded-xl bg-[#7B5EA7] py-4 text-lg font-semibold">{loadingAction === 'complete' ? 'Completing...' : 'Complete Trip'}</button>
           </>
         )}

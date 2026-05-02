@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { DriverCountdown } from '@/components/driver/DriverCountdown'
-import DriverMap from '@/components/maps/DriverMap'
+import { DriverMap } from '@/components/maps/DriverMap'
 import { useCurrentLocation } from '@/hooks/useDriverLocation'
 
 type Ride = {
@@ -67,7 +67,7 @@ export default function RideRequestPage() {
         {(ride.distance_miles || ride.eta_minutes) && (
           <p className="text-sm text-gray-400">{ride.distance_miles ? `${ride.distance_miles.toFixed(1)} mi` : ''} {ride.eta_minutes ? `· ${ride.eta_minutes} min` : ''}</p>
         )}
-        <DriverMap driverLat={lat} driverLng={lng} pickupLat={ride.pickup_lat ?? null} pickupLng={ride.pickup_lng ?? null} />
+        {lat !== null && lng !== null && <DriverMap driverLat={lat} driverLng={lng} pickupLat={ride.pickup_lat ?? undefined} pickupLng={ride.pickup_lng ?? undefined} />}
         <div className="grid grid-cols-2 gap-3">
           <button disabled={!!loadingAction} onClick={declineAndLeave} className="rounded-xl border border-red-500 py-3 font-semibold text-red-400 disabled:opacity-60">{loadingAction === 'decline' ? 'Declining...' : 'Decline'}</button>
           <button disabled={!!loadingAction} onClick={acceptRide} className="rounded-xl bg-[#7B5EA7] py-3 font-semibold text-white disabled:opacity-60">{loadingAction === 'accept' ? 'Accepting...' : 'Accept Ride'}</button>

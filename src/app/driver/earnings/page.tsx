@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { Skeleton } from '@/components/shared/Skeleton'
 
 type Period = 'today' | 'week' | 'month'
 
@@ -18,6 +19,7 @@ export default function DriverEarningsPage() {
       <div className="text-4xl font-bold">${(data?.total_net ?? 0).toFixed?.(2) ?? '0.00'}</div>
       <div className="grid grid-cols-3 gap-4 text-sm"><div>Rides {data?.ride_count ?? 0}</div><div>Earnings ${(data?.total_gross ?? 0).toFixed?.(2) ?? '0.00'}</div><div>Fees ${(data?.total_fees ?? 0).toFixed?.(2) ?? '0.00'}</div></div>
       <div className="space-y-2">
+        {!data ? Array.from({ length: 4 }).map((_, i) => (<div key={i} className="flex items-center justify-between rounded border p-3 text-sm"><Skeleton className="h-4 w-2/3" /><Skeleton className="h-4 w-16" /></div>)) : null}
         {(data?.recent_rides ?? []).map((ride: any) => (
           <div key={ride.ride_id} className="flex items-center justify-between rounded border p-3 text-sm">
             <div>

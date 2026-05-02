@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getGoogleMaps } from '@/lib/maps/client'
 
 type Suggestion = google.maps.places.AutocompletePrediction
@@ -19,11 +19,8 @@ export function AddressAutocomplete({ value, onChange, placeholder, className }:
   const [error, setError] = useState<string | null>(null)
   const autocompleteRef = useRef<google.maps.places.AutocompleteService | null>(null)
   const placesServiceRef = useRef<google.maps.places.PlacesService | null>(null)
-
-  const bounds = useMemo(
-    () => new google.maps.LatLngBounds({ lat: 32.5, lng: -117.6 }, { lat: 33.3, lng: -116.7 }),
-    []
-  )
+  // Created lazily after Maps loads — safe for SSR
+  const boundsRef = useRef<google.maps.LatLngBounds | null>(null)
 
   useEffect(() => setInputValue(value), [value])
 
@@ -32,6 +29,10 @@ export function AddressAutocomplete({ value, onChange, placeholder, className }:
       .then((maps) => {
         autocompleteRef.current = new maps.places.AutocompleteService()
         placesServiceRef.current = new maps.places.PlacesService(document.createElement('div'))
+        boundsRef.current = new maps.LatLngBounds(
+          { lat: 32.5, lng: -117.6 },
+          { lat: 33.3, lng: -116.7 }
+        )
       })
       .catch((err: unknown) => setError(err instanceof Error ? err.message : 'Maps unavailable'))
   }, [])
@@ -46,7 +47,7 @@ export function AddressAutocomplete({ value, onChange, placeholder, className }:
     service.getPlacePredictions(
       {
         input: query,
-        bounds,
+        bounds: boundsRef.current ?? undefined,
         componentRestrictions: { country: 'us' },
       },
       (results) => {

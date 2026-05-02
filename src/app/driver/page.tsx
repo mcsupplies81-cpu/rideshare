@@ -21,9 +21,9 @@ export default function DriverDashboard() {
     let channel: ReturnType<typeof supabase.channel> | null = null
     void (async () => {
       const { data } = await supabase.auth.getUser(); const userId = data.user?.id; if (!userId || !isOnline) return
-      channel = supabase.channel(`driver-${userId}`).on('broadcast', { event: 'ride_request' }, (payload) => {
-        const rideId = (payload.payload as { rideId?: string; ride_id?: string })?.rideId ?? (payload.payload as any)?.ride_id
-        if (rideId) router.push(`/driver/request/${rideId}`)
+      channel = supabase.channel(`driver:${userId}`).on('broadcast', { event: 'ride_request' }, (payload) => {
+        const data = payload.payload as { type?: string; ride?: { id?: string } }
+        if (data?.type === 'ride_request' && data.ride?.id) router.push(`/driver/request/${data.ride.id}`)
       }).subscribe()
     })()
     return () => { if (channel) void supabase.removeChannel(channel) }
@@ -36,5 +36,5 @@ export default function DriverDashboard() {
     setLoading(false)
   }
 
-  return <main className="space-y-4"><div className="flex items-center justify-between"><h1 className="text-2xl font-semibold">Good morning, {name}!</h1><span className={`h-3 w-3 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-400'}`} /></div><OnlineToggle isOnline={isOnline} onChange={toggle} loading={loading} />{isOnline && <p className="flex items-center gap-2 text-green-700"><span className="h-2 w-2 animate-pulse rounded-full bg-green-500" />You're online</p>}{trialDays ? <div className="rounded-lg bg-purple-100 p-3 text-purple-900">First 100 Drivers — 1 MONTH FREE · {trialDays} days remaining</div> : null}<div className="rounded-lg border p-4"><h2 className="mb-2 font-semibold">Today's Summary</h2><p>Rides: {summary.rides} | Earnings: ${summary.earnings.toFixed(2)} | Hours: {summary.hours}</p></div><Link href="/driver/earnings" className="text-purple-700 underline">View Earnings</Link></main>
+  return <main className="space-y-4"><div className="flex items-center justify-between"><h1 className="text-2xl font-semibold">Good morning, {name}!</h1><span className={`h-3 w-3 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-400'}`} /></div><OnlineToggle isOnline={isOnline} onChange={toggle} loading={loading} />{isOnline && <p className="flex items-center gap-2 text-green-300"><span className="h-2 w-2 animate-pulse rounded-full bg-green-400" />Waiting for rides...</p>}{trialDays ? <div className="rounded-lg bg-purple-100 p-3 text-purple-900">First 100 Drivers — 1 MONTH FREE · {trialDays} days remaining</div> : null}<div className="rounded-lg border p-4"><h2 className="mb-2 font-semibold">Today's Summary</h2><p>Rides: {summary.rides} | Earnings: ${summary.earnings.toFixed(2)} | Hours: {summary.hours}</p></div><Link href="/driver/earnings" className="text-purple-700 underline">View Earnings</Link></main>
 }
